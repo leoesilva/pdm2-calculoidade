@@ -1,6 +1,5 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 
 const idadeCalculada = (dataNascimentoDetalhada, anoAtual, mesAtual, diaAtual) => {
@@ -57,14 +56,30 @@ const formatarData = (data) => {
   return `${dia}/${mes}/${ano}`;
 }
 
+const parseDataPtBr = (texto) => {
+  // Espera DD/MM/AAAA
+  const partes = texto.split('/');
+  if (partes.length !== 3) return null;
+  const [dia, mes, ano] = partes.map(Number);
+  if (!dia || !mes || !ano) return null;
+  // Validação simples de data
+  if (dia < 1 || dia > 31 || mes < 1 || mes > 12 || ano < 1900) return null;
+  return new Date(ano, mes - 1, dia);
+};
+
 export default function App() {
-  const [dataDigitada, setDataDigitada] = useState(new Date());
+  const [dataTexto, setDataTexto] = useState('');
+  const [dataDigitada, setDataDigitada] = useState(null);
   const [idade, setIdade] = useState('');
-  const [mostrarPicker, setMostrarPicker] = useState(false);
 
   const calculaIdade = () => {
+    const dataNascimento = parseDataPtBr(dataTexto);
+    if (!dataNascimento) {
+      setIdade('Data inválida!');
+      return;
+    }
+    setDataDigitada(dataNascimento);
     const dataAtual = new Date();
-    const dataNascimento = new Date(dataDigitada);
     const dataNascimentoDetalhada = {
       dia: dataNascimento.getDate(),
       mes: dataNascimento.getMonth() + 1,
@@ -84,36 +99,19 @@ export default function App() {
     setIdade(mostrarIdade(anos, meses, dias));
   }
 
-  const onChangePicker = (event, selectedDate) => {
-    setMostrarPicker(false);
-    if (selectedDate) {
-      setDataDigitada(selectedDate);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.titulo}>Cálculo de idade</Text>
       <View style={styles.card}>
         <Text style={styles.label}>Data de nascimento</Text>
-        <TouchableOpacity
+        <TextInput
           style={styles.inputData}
-          onPress={() => setMostrarPicker(true)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.inputDataTexto}>
-            {dataDigitada ? formatarData(dataDigitada) : 'Selecionar data'}
-          </Text>
-        </TouchableOpacity>
-        {mostrarPicker && (
-          <DateTimePicker
-            mode="date"
-            display="default"
-            value={dataDigitada}
-            onChange={onChangePicker}
-            maximumDate={new Date()}
-          />
-        )}
+          placeholder="DD/MM/AAAA"
+          value={dataTexto}
+          onChangeText={setDataTexto}
+          keyboardType="numeric"
+          maxLength={10}
+        />
         <TouchableOpacity style={styles.botao} onPress={calculaIdade}>
           <Text style={styles.textoBotao}>Calcular idade</Text>
         </TouchableOpacity>
@@ -121,6 +119,11 @@ export default function App() {
       <View style={styles.resultadoCard}>
         <Text style={styles.resultadoTitulo}>Idade calculada</Text>
         <Text style={styles.resultadoTexto}>{idade}</Text>
+        {dataDigitada && (
+          <Text style={styles.dataInfo}>
+            Data informada: {formatarData(dataDigitada)}
+          </Text>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -169,11 +172,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f7fafc',
     marginBottom: 18,
     alignItems: 'center',
-  },
-  inputDataTexto: {
     fontSize: 18,
     color: '#2a4d69',
     letterSpacing: 1,
+    textAlign: 'center',
   },
   botao: {
     backgroundColor: '#4f8cff',
@@ -216,6 +218,12 @@ const styles = StyleSheet.create({
     color: '#2a4d69',
     fontWeight: 'bold',
     letterSpacing: 1,
+    textAlign: 'center',
+  },
+  dataInfo: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#2a4d69',
     textAlign: 'center',
   },
 });
